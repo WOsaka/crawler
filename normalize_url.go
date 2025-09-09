@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/url"
 	"regexp"
 	"strings"
@@ -22,7 +21,6 @@ func normalizeURL(rawURL string) (string, error) {
 	path = re.ReplaceAllString(path, "/")
 
 	normalizedURL := host + path
-	log.Println(path)
 
 	normalizedURL = strings.TrimSuffix(normalizedURL, "/")
 	return normalizedURL, nil
