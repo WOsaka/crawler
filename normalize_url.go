@@ -1,37 +1,29 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/url"
+	"regexp"
+	"strings"
 )
 
 func normalizeURL(rawURL string) (string, error) {
+	rawURL = strings.ToLower(rawURL)
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse URL: %w", err)
+		return "", err
 	}
 
 	host := parsedURL.Host
-	path := parsedURL.EscapedPath()
-	if host == "" {
-		// No scheme, treat as already normalized
-		host = parsedURL.Path
-		path = ""
-	}
+	host = strings.TrimPrefix(host, "www.")
 
-	// Remove trailing slash unless path is just "/"
-	if len(path) > 1 && path[len(path)-1] == '/' {
-		path = path[:len(path)-1]
-	}
+	path := parsedURL.Path
+	re := regexp.MustCompile("/+")
+	path = re.ReplaceAllString(path, "/")
 
-	normalized := host + path
+	normalizedURL := host + path
+	log.Println(path)
 
-	if parsedURL.RawQuery != "" {
-		normalized += "?" + parsedURL.RawQuery
-	}
-	if parsedURL.Fragment != "" {
-		normalized += "#" + parsedURL.Fragment
-	}
-
-	return normalized, nil
+	normalizedURL = strings.TrimSuffix(normalizedURL, "/")
+	return normalizedURL, nil
 }

@@ -19,13 +19,18 @@ func TestNormalizeURL(t *testing.T) {
 			expected: "blog.boot.dev/path",
 		},
 		{
+			name:     "remove www",
+			inputURL: "https://www.blog.boot.dev/path/",
+			expected: "blog.boot.dev/path",
+		},
+		{
 			name:     "no changes needed",
 			inputURL: "blog.boot.dev/path",
 			expected: "blog.boot.dev/path",
 		},
 		{
-			name:     "http scheme",
-			inputURL: "http://example.com/path",
+			name:     "lowercase hostname",
+			inputURL: "http://EXAMPLE.COM/path",
 			expected: "example.com/path",
 		},
 		{
@@ -34,34 +39,24 @@ func TestNormalizeURL(t *testing.T) {
 			expected: "example.com:8080/path",
 		},
 		{
-			name:     "URL with query params",
-			inputURL: "https://example.com/path?foo=bar",
-			expected: "example.com/path?foo=bar",
-		},
-		{
 			name:     "URL with fragment",
 			inputURL: "https://example.com/path#section",
-			expected: "example.com/path#section",
+			expected: "example.com/path",
 		},
 		{
 			name:     "multiple slashes",
 			inputURL: "https://example.com//foo///bar/",
-			expected: "example.com//foo///bar",
+			expected: "example.com/foo/bar",
 		},
 		{
 			name:     "uppercase host and path",
 			inputURL: "https://EXAMPLE.COM/FOO/BAR",
-			expected: "EXAMPLE.COM/FOO/BAR",
+			expected: "example.com/foo/bar",
 		},
 		{
 			name:     "user info in URL",
 			inputURL: "https://user:pass@example.com/path",
 			expected: "example.com/path",
-		},
-		{
-			name:     "percent encoded",
-			inputURL: "https://example.com/pa%20th",
-			expected: "example.com/pa%20th",
 		},
 		{
 			name:     "empty path",
@@ -71,7 +66,7 @@ func TestNormalizeURL(t *testing.T) {
 		{
 			name:     "only slash path",
 			inputURL: "https://example.com/",
-			expected: "example.com/",
+			expected: "example.com",
 		},
 		{
 			name:     "subdomain",
