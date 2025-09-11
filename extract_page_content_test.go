@@ -6,6 +6,104 @@ import (
 	"testing"
 )
 
+func TestExtractPageData(t *testing.T) {
+	tests := []struct {
+		name      string
+		inputHtml string
+		pageURL   string
+		expected  PageData
+	}{{
+		name:    "basic test",
+		pageURL: "https://blog.boot.dev",
+		inputHtml: "<html><body>" +
+			"<h1>Test Title</h1>" +
+			"<p>This is the first paragraph.</p>" +
+			"<a href=\"/link1\">Link 1</a>" +
+			"<img src=\"/image1.jpg\" alt=\"Image 1\">" +
+			"</body></html>",
+		expected: PageData{
+			URL:            "https://blog.boot.dev",
+			H1:             "Test Title",
+			FirstParagraph: "This is the first paragraph.",
+			OutgoingLinks:  []string{"https://blog.boot.dev/link1"},
+			ImageURLs:      []string{"https://blog.boot.dev/image1.jpg"},
+		},
+	},
+		{
+
+			name:    "multiple images and links",
+			pageURL: "https://blog.boot.dev",
+			inputHtml: "<html><body>" +
+				"<h1>Test Title</h1>" +
+				"<p>This is the first paragraph.</p>" +
+				"<img src=\"/image1.jpg\" alt=\"Image 1\">" +
+				"<a href=\"/link1\">Link 1</a>" +
+				"<img src=\"/image2.jpg\" alt=\"Image 2\">" +
+				"<a href=\"/link2\">Link 2</a>" +
+				"</body></html>",
+			expected: PageData{
+				URL:            "https://blog.boot.dev",
+				H1:             "Test Title",
+				FirstParagraph: "This is the first paragraph.",
+				OutgoingLinks:  []string{"https://blog.boot.dev/link1", "https://blog.boot.dev/link2"},
+				ImageURLs:      []string{"https://blog.boot.dev/image1.jpg", "https://blog.boot.dev/image2.jpg"},
+			},
+		},
+		{
+			name:    "no images or links",
+			pageURL: "https://blog.boot.dev",
+			inputHtml: "<html><body>" +
+				"<h1>Test Title</h1>" +
+				"<p>This is the first paragraph.</p>" +
+				"</body></html>",
+			expected: PageData{
+				URL:            "https://blog.boot.dev",
+				H1:             "Test Title",
+				FirstParagraph: "This is the first paragraph.",
+				OutgoingLinks:  []string{},
+				ImageURLs:      []string{},
+			},
+		},
+		{
+			name:    "no h1 or paragraph",
+			pageURL: "https://blog.boot.dev",
+			inputHtml: "<html><body>" +
+				"<a href=\"/link1\">Link 1</a>" +
+				"<img src=\"/image1.jpg\" alt=\"Image 1\">" +
+				"</body></html>",
+			expected: PageData{
+				URL:            "https://blog.boot.dev",
+				H1:             "",
+				FirstParagraph: "",
+				OutgoingLinks:  []string{"https://blog.boot.dev/link1"},
+				ImageURLs:      []string{"https://blog.boot.dev/image1.jpg"},
+			},
+		},
+		{
+			name:      "empty HTML",
+			pageURL:   "https://blog.boot.dev",
+			inputHtml: "",
+			expected: PageData{
+				URL:            "https://blog.boot.dev",
+				H1:             "",
+				FirstParagraph: "",
+				OutgoingLinks:  []string{},
+				ImageURLs:      []string{},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := extractPageData(tc.inputHtml, tc.pageURL)
+
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Errorf("expected %v, got %v", tc.expected, actual)
+			}
+		})
+	}
+}
+
 func TestGetImagesFromHTML(t *testing.T) {
 	tests := []struct {
 		name      string
