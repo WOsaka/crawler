@@ -1,25 +1,38 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/url"
 )
 
-func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
-	parsedBaseURL, err := url.Parse(rawBaseURL)
-	if err != nil {
-		log.Printf("error parsing base URL %s: %v", rawBaseURL, err)
+func (cfg *config) crawlPage(rawCurrentURL string) {
+	cfg.mu.Lock()
+	pagesLength := len(cfg.pages)
+	if pagesLength >= cfg.maxPages {
+		cfg.mu.Unlock()
 		return
 	}
+	cfg.mu.Unlock()
+
+	linkStatus := "not followed"
+	defer func() {
+		log.Printf("%s - %s", rawCurrentURL, linkStatus)
+	}()
 
 	parsedCurrentURL, err := url.Parse(rawCurrentURL)
 	if err != nil {
-		log.Printf("error parsing current URL %s: %v", rawBaseURL, err)
+		log.Printf("error parsing current URL %s: %v", rawCurrentURL, err)
 		return
 	}
 
-	if parsedBaseURL.Host != parsedCurrentURL.Host {
+	if cfg.baseURL.Host != parsedCurrentURL.Host {
+		linkStatus = "not followed - external domain"
+		return
+	}
+
+	html, err := getHTML(rawCurrentURL)
+	if err != nil {
+		log.Printf("error fetching HTML for %s: %v", rawCurrentURL, err)
 		return
 	}
 
@@ -29,33 +42,41 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 		return
 	}
 
-	if _, found := pages[normalizedCurrentURL]; found {
-		pages[normalizedCurrentURL]++
-		return
-	} else {
-		pages[normalizedCurrentURL] = 1
-	}
-
-	html, err := getHTML(rawCurrentURL)
-	if err != nil {
-		log.Printf("error fetching HTML for %s: %v", rawCurrentURL, err)
+	if !cfg.firstVisit(normalizedCurrentURL) {
+		linkStatus = "not followed - already visited"
 		return
 	}
-	// log.Println(html)
 
-	links, err := getURLsFromHTML(html, parsedBaseURL)
-	if err != nil {
-		log.Printf("error extracting links from %s: %v", rawCurrentURL, err)
-		return
-	}
-	log.Printf("found %d links on %s\n", len(links), rawCurrentURL)
+	linkStatus = "followed"
 
-	for _, link := range links {
-		crawlPage(rawBaseURL, link, pages)
+	pageData := extractPageData(html, rawCurrentURL)
+
+	cfg.mu.Lock()
+	cfg.pages[normalizedCurrentURL] = pageData
+	cfg.mu.Unlock()
+	log.Println("added to pages:", normalizedCurrentURL)
+
+	for _, link := range pageData.OutgoingLinks {
+		cfg.wg.Add(1)
+		go func(url string) {
+			defer cfg.wg.Done()
+			cfg.concurrencyControl <- struct{}{}
+			cfg.crawlPage(url)
+			<-cfg.concurrencyControl 
+		}(link)
 	}
 
-	if rawBaseURL == rawCurrentURL {
-		fmt.Println("Crawl complete, visited pages:")
-		fmt.Println(pages) 
+}
+
+func (cfg *config) firstVisit(normalizedURL string) bool {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	_, found := cfg.pages[normalizedURL]
+	if found {
+		return false
 	}
+
+	cfg.pages[normalizedURL] = PageData{}
+	return true
 }
