@@ -84,19 +84,22 @@ func getH1FromHTML(html string) string {
 		return ""
 	}
 	h1Tag := doc.Find("h1").First().Text()
+	h1Tag = strings.TrimSpace(h1Tag)
 	return h1Tag
 }
 
 func getFirstParagraphFromHTML(html string) string {
 	reader := strings.NewReader(html)
+
 	doc, err := goquery.NewDocumentFromReader(reader)
 	if err != nil {
 		return ""
 	}
-	// pTag := doc.Find("main").Find("p").First().Text()
+
 	pTag := doc.Find("main p").First().Text()
 	if pTag == "" {
 		pTag = doc.Find("p").First().Text()
 	}
+	pTag = strings.TrimSpace(pTag)
 	return pTag
 }

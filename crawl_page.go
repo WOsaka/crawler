@@ -14,10 +14,10 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 	}
 	cfg.mu.Unlock()
 
-	linkStatus := "not followed"
-	defer func() {
-		log.Printf("%s - %s", rawCurrentURL, linkStatus)
-	}()
+	// linkStatus := "not followed"
+	// defer func() {
+	// 	log.Printf("%s - %s", rawCurrentURL, linkStatus)
+	// }()
 
 	parsedCurrentURL, err := url.Parse(rawCurrentURL)
 	if err != nil {
@@ -26,7 +26,7 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 	}
 
 	if cfg.baseURL.Host != parsedCurrentURL.Host {
-		linkStatus = "not followed - external domain"
+		// linkStatus = "not followed - external domain"
 		return
 	}
 
@@ -43,18 +43,18 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 	}
 
 	if !cfg.firstVisit(normalizedCurrentURL) {
-		linkStatus = "not followed - already visited"
+		// linkStatus = "not followed - already visited"
 		return
 	}
 
-	linkStatus = "followed"
+	// linkStatus = "followed"
 
 	pageData := extractPageData(html, rawCurrentURL)
 
 	cfg.mu.Lock()
 	cfg.pages[normalizedCurrentURL] = pageData
 	cfg.mu.Unlock()
-	log.Println("added to pages:", normalizedCurrentURL)
+	// log.Println("added to pages:", normalizedCurrentURL)
 
 	for _, link := range pageData.OutgoingLinks {
 		cfg.wg.Add(1)
@@ -62,7 +62,7 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 			defer cfg.wg.Done()
 			cfg.concurrencyControl <- struct{}{}
 			cfg.crawlPage(url)
-			<-cfg.concurrencyControl 
+			<-cfg.concurrencyControl
 		}(link)
 	}
 
