@@ -1,4 +1,4 @@
-module github.com/WOsaka/bootdev-crawler
+module github.com/WOsaka/crawler
 
 go 1.25.1
 
